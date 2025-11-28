@@ -1,5 +1,6 @@
 import org.yaml.snakeyaml.Yaml;
 
+var resp = jelastic.environment.control.GetEnvs(appid, session);
 var listBackups = {};
 var backupTemplate = "c3c375b4-83c6-434c-b8af-8ea6651e246d";
 var nodesArray = [];
@@ -8,29 +9,22 @@ var ids = [];
 var conteneur = '';
 var file = '';
 var nodesHostname = {};
-var resp = jelastic.environment.control.GetEnvInfo(envName, session);
 if (resp.result != 0) return resp;
-var envName = '${globals.env}';
-var envInfo = resp;
 
 
-if (envInfo.env && envInfo.env.status == "1") {
-    jelastic.marketplace.console.WriteLog("env is started " + envInfo.env.domain.domain);
-    for (var j = 0; envInfo.nodes && (node = envInfo.nodes[j]); j++) {
-        if (!node.addons) continue;
-        for (var m = 0; (add = node.addons[m]); m++) {
-            if (add.appTemplateId == backupTemplate) {
-                conteneur = node.adminUrl
-                    .replace("https://", "")
-                    .replace("http://", "")
-                    .replace(/\..*/, "")
-                    .replace("docker", "node")
-                    .replace("vds", "node");
-                nodesArray.push(conteneur);
-                ids.push({
-                    name: conteneur.substring(conteneur.indexOf('-') + 1, conteneur.length),
-                    id: conteneur.substring(4, conteneur.indexOf('-'))
-                });
+for (var i = 0; envInfo = resp.infos[i]; i++) {
+    if (envInfo.env.status == "1") {
+        jelastic.marketplace.console.WriteLog("env is started" + envInfo.env.domain)
+        for (var j = 0; node = envInfo.nodes[j]; j++) {
+            for (var m = 0; add = node.addons[m]; m++) {
+                if (add.appTemplateId == backupTemplate) {
+                    var conteneur = node.adminUrl.replace("https://", "").replace("http://", "").replace(/\..*/, "").replace("docker", "node").replace("vds", "node");
+                    nodesArray.push(conteneur);
+                    ids.push({
+                        name: conteneur.substring(conteneur.indexOf('-') + 1, conteneur.length),
+                        id: conteneur.substring(4, conteneur.indexOf('-'))
+                    });
+                }
             }
         }
     }
