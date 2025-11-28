@@ -10,6 +10,7 @@ var file = '';
 var nodesHostname = {};
 var resp = jelastic.environment.control.GetEnvInfo(envName, session);
 if (resp.result != 0) return resp;
+var envName = '${env.name}';
 var envInfo = resp;
 
 
