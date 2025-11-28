@@ -1,65 +1,105 @@
 import org.yaml.snakeyaml.Yaml;
 
-var resp = jelastic.environment.control.GetEnvs(appid, session);
-var listBackups = {};
+var listBackups   = {};
 var backupTemplate = "c3c375b4-83c6-434c-b8af-8ea6651e246d";
-var nodesArray = [];
-var nodesName = {};
-var ids = [];
-var conteneur = '';
-var file = '';
 var nodesHostname = {};
+var ids           = [];
+var file          = '';
+var local_date    = 0;
+
+// 1) Récupérer uniquement l'environnement courant
+var envDomain = "${env.domain}";              // ex: env-4214876.jcloud.ik-server.com
+var envName   = envDomain.split(".")[0];      // -> env-4214876
+
+var resp = jelastic.environment.control.GetEnvInfo(envName, session);
 if (resp.result != 0) return resp;
 
-
-for (var i = 0; envInfo = resp.infos[i]; i++) {
-    if (envInfo.env.status == "1") {
-        jelastic.marketplace.console.WriteLog("env is started" + envInfo.env.domain)
-        for (var j = 0; node = envInfo.nodes[j]; j++) {
-            for (var m = 0; add = node.addons[m]; m++) {
-                if (add.appTemplateId == backupTemplate) {
-                    var conteneur = node.adminUrl.replace("https://", "").replace("http://", "").replace(/\..*/, "").replace("docker", "node").replace("vds", "node");
-                    nodesArray.push(conteneur);
-                    ids.push({
-                        name: conteneur.substring(conteneur.indexOf('-') + 1, conteneur.length),
-                        id: conteneur.substring(4, conteneur.indexOf('-'))
-                    });
-                }
+// Optionnel: vérif status
+if (resp.env && resp.env.status != null && resp.env.status != "1" && resp.env.status != 1) {
+    // si tu veux simplement ne rien proposer quand l'env est arrêté :
+    return {
+        result: 0,
+        settings: {
+            formId: "swiss-backup-create",
+            formCfg: {
+                fields: [
+                    {
+                        type: "displayfield",
+                        cls: "warning",
+                        hideLabel: true,
+                        markup: "Environment is stopped, backups cannot be listed."
+                    }
+                ]
             }
+        }
+    };
+}
+
+// 2) Parcourir UNIQUEMENT les nodes de cet env
+for (var j = 0, node; node = resp.nodes[j]; j++) {
+    if (!node.addons) continue;
+
+    for (var m = 0, add; add = node.addons[m]; m++) {
+        if (add.appTemplateId == backupTemplate) {
+            // adminUrl -> "https://docker1234-env-xxxxx.jcloud..."
+            var conteneur = node.adminUrl
+                .replace("https://", "")
+                .replace("http://", "")
+                .replace(/\..*/, "")
+                .replace("docker", "node")
+                .replace("vds", "node");
+
+            ids.push({
+                name: conteneur.substring(conteneur.indexOf('-') + 1, conteneur.length),
+                id: conteneur.substring(4, conteneur.indexOf('-'))
+            });
         }
     }
 }
+
+// 3) Lecture des plan.json pour les nodes trouvés
 var params = {
     session: session,
     path: "/home/plan.json",
     nodeType: "",
     nodeGroup: ""
-}
-local_date = 0;
+};
+
 ids.forEach(function(element) {
-
-
-    var FileReadResponse = jelastic.environment.file.Read(element.name, params.session, params.path, params.nodeType, params.nodeGroup, element.id);
+    var FileReadResponse = jelastic.environment.file.Read(
+        element.name,
+        params.session,
+        params.path,
+        params.nodeType,
+        params.nodeGroup,
+        element.id
+    );
 
     if (FileReadResponse.result != 0) {
-        delete nodesName['node'.concat('', element.id + '-').concat('', element.name)];
-    } else {
-        file = FileReadResponse.body;
-        var plan = toNative(new Yaml().load(file));
-        if (plan.last_update > local_date) {
-            local_date = plan.last_update;
-            plan.backup_plan.forEach(function(objectBackup) {
-                if (!listBackups[objectBackup["name"]]) {
-                    listBackups[objectBackup["name"]] = {};
-                }
-                var toDisplay = objectBackup["date"].replace('T', ' ') + " " + objectBackup["path"] + " " + objectBackup["size"];
-                listBackups[objectBackup["name"]][objectBackup["id"]] = toDisplay
+        // pas de plan.json sur ce node -> on l'ignore
+        return;
+    }
 
-                nodesHostname[objectBackup.name] = objectBackup.name;
-            })
-        }
+    file = FileReadResponse.body;
 
+    var plan = toNative(new Yaml().load(file));
+    if (!plan || !plan.backup_plan) return;
 
+    // on garde uniquement le plan le plus récent
+    if (plan.last_update > local_date) {
+        local_date = plan.last_update;
+
+        plan.backup_plan.forEach(function(objectBackup) {
+            if (!listBackups[objectBackup["name"]]) {
+                listBackups[objectBackup["name"]] = {};
+            }
+            var toDisplay = objectBackup["date"].replace('T', ' ')
+                + " " + objectBackup["path"]
+                + " " + objectBackup["size"];
+
+            listBackups[objectBackup["name"]][objectBackup["id"]] = toDisplay;
+            nodesHostname[objectBackup.name] = objectBackup.name;
+        });
     }
 });
 return {
