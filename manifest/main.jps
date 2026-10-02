@@ -31,6 +31,8 @@ actions:
   backup:
     install:
       jps: manifest/folders.jps
+      envName: ${env.name}
+      nodeGroup: ${targetNodes.nodeGroup}
     setGlobals:
       SUCCESS: backup
     settings:
@@ -46,6 +48,8 @@ actions:
   restauration:
     install:
       jps: manifest/recovery.jps
+      envName: ${env.name}
+      nodeGroup: ${targetNodes.nodeGroup}
     setGlobals:
       SUCCESS: success
     settings:
@@ -58,6 +62,8 @@ actions:
   user-restauration:
     install:
       jps: manifest/user-recovery.jps
+      envName: ${env.name}
+      nodeGroup: ${targetNodes.nodeGroup}
     setGlobals:
       SUCCESS: success
     settings:
@@ -71,6 +77,8 @@ actions:
   snapshot:
     install:
       jps: manifest/snapshot.jps
+      envName: ${env.name}
+      nodeGroup: ${targetNodes.nodeGroup}
     setGlobals:
       SUCCESS: snapshots
     settings:
@@ -85,6 +93,8 @@ actions:
   desinstall:
     install:
       jps: manifest/uninstall.jps
+      envName: ${env.name}
+      nodeGroup: ${targetNodes.nodeGroup}
     setGlobals:
       SUCCESS: remove
     settings:
