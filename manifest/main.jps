@@ -26,6 +26,9 @@ onInstall:
   - if ('${settings.mode}' == 'restauration' && '${settings.permissions}' == 'permissions'): user-restauration
 
 actions:
+
+  # ── onInstall flow — install: jps: works here, not from button ───────────────
+
   backup:
     - install:
         jps: manifest/folders.jps
@@ -98,13 +101,147 @@ actions:
     - setGlobals:
         SUCCESS: remove
 
+  # ── Button flow — cmd directly on node, no install: jps: ─────────────────────
+
+  modify-snapshot:
+    - cmd [${globals.nodeGroup}]: |-
+        if [ -f "/var/spool/cron/crontabs/root" ]; then sed -i '/restic.lock/d' /var/spool/cron/crontabs/root; elif [ -f "/var/spool/cron/root" ]; then sed -i '/restic.lock/d' /var/spool/cron/root; fi
+        crontab -u root -l | grep -v '/root/heal.sh' | crontab -u root -
+        crontab -u root -l | { cat; echo "50 1 * * WED /root/heal.sh "; } | crontab -
+        if [ "${settings.sauvegarde}" = "hourly" ]; then
+          crontab -u root -l | { cat; echo "0 */1 * * * /usr/bin/nohup /usr/bin/flock --nonblock --conflict-exit-code 0 /run/user/restic.lock /root/retention-all.sh >> /var/log/restic.log 2>&1 "; } | crontab -
+        else
+          crontab -u root -l | { cat; echo "0 20 * * * /usr/bin/nohup /usr/bin/flock --nonblock --conflict-exit-code 0 /run/user/restic.lock /root/retention-all.sh >> /var/log/restic.log 2>&1 "; } | crontab -
+        fi
+        crontab -u root -l | grep -v '/root/purge.sh' | crontab -u root -
+        crontab -u root -l | { cat; echo "30 22 * * * perl -le 'sleep rand 600' && /root/purge.sh -y \"${settings.year}\" -m \"${settings.month}\" -d \"${settings.day}\" >> /var/log/retention.log 2>&1 "; } | crontab -
+      user: root
+    - setGlobals:
+        SUCCESS: snapshots
+
+  modify-folder:
+    - cmd [${globals.nodeGroup}]: |-
+        if [ -f "/var/spool/cron/crontabs/root" ]; then sed -i '/restic.lock/d' /var/spool/cron/crontabs/root; elif [ -f "/var/spool/cron/root" ]; then sed -i '/restic.lock/d' /var/spool/cron/root; fi
+        crontab -u root -l | grep -v '/root/heal.sh' | crontab -u root -
+        crontab -u root -l | { cat; echo "50 1 * * WED /root/heal.sh "; } | crontab -
+        if [ "${settings.sauvegarde}" = "hourly" ]; then
+          crontab -u root -l | { cat; echo "0 */1 * * * /usr/bin/nohup /usr/bin/flock --nonblock --conflict-exit-code 0 /run/user/restic.lock /root/retention-repo.sh -f \"${settings.path}\" >> /var/log/restic.log 2>&1 "; } | crontab -
+        else
+          crontab -u root -l | { cat; echo "0 20 * * * /usr/bin/nohup /usr/bin/flock --nonblock --conflict-exit-code 0 /run/user/restic.lock /root/retention-repo.sh -f \"${settings.path}\" >> /var/log/restic.log 2>&1 "; } | crontab -
+        fi
+        crontab -u root -l | grep -v '/root/purge.sh' | crontab -u root -
+        crontab -u root -l | { cat; echo "30 22 * * * perl -le 'sleep rand 600' && /root/purge.sh -y \"${settings.year}\" -m \"${settings.month}\" -d \"${settings.day}\" >> /var/log/retention.log 2>&1 "; } | crontab -
+      user: root
+    - setGlobals:
+        SUCCESS: backup
+
+  button-snapshot:
+    - script: https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/check.cs
+    - cmd [${globals.nodeGroup}]: |-
+        endpoint=${response.post}
+        > /home/.config/swissbackup/openrc.sh
+        echo "export OS_AUTH_URL="$endpoint"" >> /home/.config/swissbackup/openrc.sh
+        echo "export OS_REGION_NAME="RegionOne"" >> /home/.config/swissbackup/openrc.sh
+        echo "export OS_PROJECT_NAME="sb_project_${settings.User}"" >> /home/.config/swissbackup/openrc.sh
+        echo 'export OS_PASSWORD="${settings.key}"' >> /home/.config/swissbackup/openrc.sh
+        echo "export OS_USER_DOMAIN_NAME="default"" >> /home/.config/swissbackup/openrc.sh
+        echo "export OS_USERNAME="${settings.User}"" >> /home/.config/swissbackup/openrc.sh
+        echo "export OS_PROJECT_DOMAIN_NAME="default"" >> /home/.config/swissbackup/openrc.sh
+        echo "export RESTIC_REPOSITORY="swift:sb_project_${settings.User}:/Jelastic-Infomaniak"" >> /home/.config/swissbackup/openrc.sh
+        echo "export RESTIC_PASSWORD_FILE=/home/.config/swissbackup/secret.txt" >> /home/.config/swissbackup/openrc.sh
+        if [ -f "/var/spool/cron/crontabs/root" ]; then sed -i '/restic.lock/d' /var/spool/cron/crontabs/root; elif [ -f "/var/spool/cron/root" ]; then sed -i '/restic.lock/d' /var/spool/cron/root; fi
+        crontab -u root -l | grep -v '/root/heal.sh' | crontab -u root -
+        crontab -u root -l | { cat; echo "50 1 * * WED /root/heal.sh "; } | crontab -
+        crontab -u root -l | { cat; echo "* * * * * /usr/bin/nohup /usr/bin/flock --nonblock --conflict-exit-code 0 /run/user/restic.lock /root/retention-all.sh >> /var/log/first-backup.log 2>&1 "; } | crontab -
+        if [ "${settings.sauvegarde}" = "hourly" ]; then
+          crontab -u root -l | { cat; echo "0 */1 * * * /usr/bin/nohup /usr/bin/flock --nonblock --conflict-exit-code 0 /run/user/restic.lock /root/retention-all.sh >> /var/log/restic.log 2>&1 "; } | crontab -
+        else
+          crontab -u root -l | { cat; echo "0 20 * * * /usr/bin/nohup /usr/bin/flock --nonblock --conflict-exit-code 0 /run/user/restic.lock /root/retention-all.sh >> /var/log/restic.log 2>&1 "; } | crontab -
+        fi
+        crontab -u root -l | grep -v '/root/purge.sh' | crontab -u root -
+        crontab -u root -l | { cat; echo "30 22 * * * perl -le 'sleep rand 600' && /root/purge.sh -y \"${settings.year}\" -m \"${settings.month}\" -d \"${settings.day}\" >> /var/log/retention.log 2>&1 "; } | crontab -
+      user: root
+    - setGlobals:
+        SUCCESS: snapshots
+
+  button-folder:
+    - script: https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/check.cs
+    - cmd [${globals.nodeGroup}]: |-
+        endpoint=${response.post}
+        > /home/.config/swissbackup/openrc.sh
+        echo "export OS_AUTH_URL="$endpoint"" >> /home/.config/swissbackup/openrc.sh
+        echo "export OS_REGION_NAME="RegionOne"" >> /home/.config/swissbackup/openrc.sh
+        echo "export OS_PROJECT_NAME="sb_project_${settings.User}"" >> /home/.config/swissbackup/openrc.sh
+        echo 'export OS_PASSWORD="${settings.key}"' >> /home/.config/swissbackup/openrc.sh
+        echo "export OS_USER_DOMAIN_NAME="default"" >> /home/.config/swissbackup/openrc.sh
+        echo "export OS_USERNAME="${settings.User}"" >> /home/.config/swissbackup/openrc.sh
+        echo "export OS_PROJECT_DOMAIN_NAME="default"" >> /home/.config/swissbackup/openrc.sh
+        echo "export RESTIC_REPOSITORY="swift:sb_project_${settings.User}:/Jelastic-Infomaniak"" >> /home/.config/swissbackup/openrc.sh
+        echo "export RESTIC_PASSWORD_FILE=/home/.config/swissbackup/secret.txt" >> /home/.config/swissbackup/openrc.sh
+        if [ -f "/var/spool/cron/crontabs/root" ]; then sed -i '/restic.lock/d' /var/spool/cron/crontabs/root; elif [ -f "/var/spool/cron/root" ]; then sed -i '/restic.lock/d' /var/spool/cron/root; fi
+        crontab -u root -l | grep -v '/root/heal.sh' | crontab -u root -
+        crontab -u root -l | { cat; echo "50 1 * * WED /root/heal.sh "; } | crontab -
+        crontab -u root -l | { cat; echo "* * * * * /usr/bin/nohup /usr/bin/flock --nonblock --conflict-exit-code 0 /run/user/restic.lock /root/retention-repo.sh -f \"${settings.path}\" >> /var/log/first-backup.log 2>&1 "; } | crontab -
+        if [ "${settings.sauvegarde}" = "hourly" ]; then
+          crontab -u root -l | { cat; echo "0 */1 * * * /usr/bin/nohup /usr/bin/flock --nonblock --conflict-exit-code 0 /run/user/restic.lock /root/retention-repo.sh -f \"${settings.path}\" >> /var/log/restic.log 2>&1 "; } | crontab -
+        else
+          crontab -u root -l | { cat; echo "0 20 * * * /usr/bin/nohup /usr/bin/flock --nonblock --conflict-exit-code 0 /run/user/restic.lock /root/retention-repo.sh -f \"${settings.path}\" >> /var/log/restic.log 2>&1 "; } | crontab -
+        fi
+        crontab -u root -l | grep -v '/root/purge.sh' | crontab -u root -
+        crontab -u root -l | { cat; echo "30 22 * * * perl -le 'sleep rand 600' && /root/purge.sh -y \"${settings.year}\" -m \"${settings.month}\" -d \"${settings.day}\" >> /var/log/retention.log 2>&1 "; } | crontab -
+      user: root
+    - setGlobals:
+        SUCCESS: backup
+
+  button-restore:
+    - script: https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/check.cs
+    - cmd [${globals.nodeGroup}]: |-
+        endpoint=${response.post}
+        mkdir -p /home/.config/swissbackup/
+        > /home/.config/swissbackup/openrc2.sh
+        echo "export OS_AUTH_URL="$endpoint"" >> /home/.config/swissbackup/openrc2.sh
+        echo "export OS_REGION_NAME="RegionOne"" >> /home/.config/swissbackup/openrc2.sh
+        echo "export OS_PROJECT_NAME="sb_project_${settings.User}"" >> /home/.config/swissbackup/openrc2.sh
+        echo 'export OS_PASSWORD="${settings.key}"' >> /home/.config/swissbackup/openrc2.sh
+        echo "export OS_USER_DOMAIN_NAME="default"" >> /home/.config/swissbackup/openrc2.sh
+        echo "export OS_USERNAME="${settings.User}"" >> /home/.config/swissbackup/openrc2.sh
+        echo "export OS_PROJECT_DOMAIN_NAME="default"" >> /home/.config/swissbackup/openrc2.sh
+        echo "export RESTIC_REPOSITORY="swift:sb_project_${settings.User}:/Jelastic-Infomaniak"" >> /home/.config/swissbackup/openrc2.sh
+        echo "export RESTIC_PASSWORD_FILE=/home/.config/swissbackup/secret.txt" >> /home/.config/swissbackup/openrc2.sh
+        [ -f /root/recovery.sh ] || { curl -fsS https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/recovery.sh -o /root/recovery.sh && chmod +x /root/recovery.sh; }
+        /root/recovery.sh -i "${settings.snapshot}" -d ${settings.destination}
+      user: root
+    - setGlobals:
+        SUCCESS: success
+
+  button-user-restore:
+    - script: https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/check.cs
+    - cmd [${globals.nodeGroup}]: |-
+        endpoint=${response.post}
+        mkdir -p /home/.config/swissbackup/
+        > /home/.config/swissbackup/openrc2.sh
+        echo "export OS_AUTH_URL="$endpoint"" >> /home/.config/swissbackup/openrc2.sh
+        echo "export OS_REGION_NAME="RegionOne"" >> /home/.config/swissbackup/openrc2.sh
+        echo "export OS_PROJECT_NAME="sb_project_${settings.User}"" >> /home/.config/swissbackup/openrc2.sh
+        echo 'export OS_PASSWORD="${settings.key}"' >> /home/.config/swissbackup/openrc2.sh
+        echo "export OS_USER_DOMAIN_NAME="default"" >> /home/.config/swissbackup/openrc2.sh
+        echo "export OS_USERNAME="${settings.User}"" >> /home/.config/swissbackup/openrc2.sh
+        echo "export OS_PROJECT_DOMAIN_NAME="default"" >> /home/.config/swissbackup/openrc2.sh
+        echo "export RESTIC_REPOSITORY="swift:sb_project_${settings.User}:/Jelastic-Infomaniak"" >> /home/.config/swissbackup/openrc2.sh
+        echo "export RESTIC_PASSWORD_FILE=/home/.config/swissbackup/secret.txt" >> /home/.config/swissbackup/openrc2.sh
+        [ -f /root/user-recovery.sh ] || { curl -fsS https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/user-recovery.sh -o /root/user-recovery.sh && chmod +x /root/user-recovery.sh; }
+        /root/user-recovery.sh -i "${settings.snapshot}" -d ${settings.destination} -u ${settings.custom}
+      user: root
+    - setGlobals:
+        SUCCESS: success
+
   manage:
-    - if ('${settings.choice}' == 'full' && '${settings.mode}' == 'backup'): snapshot
-    - if ('${settings.choice}' == 'folder' && '${settings.mode}' == 'backup'): backup
-    - if ('${settings.mode}' == 'restauration' && '${settings.permissions}' == 'classic'): restauration
-    - if ('${settings.mode}' == 'restauration' && '${settings.permissions}' == 'permissions'): user-restauration
-    - if ('${settings.mode}' == 'modify' && '${settings.choice}' == 'full'): snapshot
-    - if ('${settings.mode}' == 'modify' && '${settings.choice}' == 'folder'): backup
+    - if ('${settings.mode}' == 'modify' && '${settings.choice}' == 'full'): modify-snapshot
+    - if ('${settings.mode}' == 'modify' && '${settings.choice}' == 'folder'): modify-folder
+    - if ('${settings.mode}' == 'backup' && '${settings.choice}' == 'full'): button-snapshot
+    - if ('${settings.mode}' == 'backup' && '${settings.choice}' == 'folder'): button-folder
+    - if ('${settings.mode}' == 'restauration' && '${settings.permissions}' == 'classic'): button-restore
+    - if ('${settings.mode}' == 'restauration' && '${settings.permissions}' == 'permissions'): button-user-restore
 
 buttons:
   - action: manage
