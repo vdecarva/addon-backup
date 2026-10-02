@@ -18,87 +18,85 @@ targetNodes:
   nodeGroup: '*'
 
 onInstall:
-  if ('${settings.choice}' == 'full' && '${settings.mode}' == 'backup' ):
-    - snapshot
-  if ('${settings.choice}' == 'folder' && '${settings.mode}' == 'backup'):
-    - backup
-  if ('${settings.mode}' == 'restauration' && '${settings.permissions}' == 'classic'):
-    - restauration
-  if ('${settings.mode}' == 'restauration' && '${settings.permissions}' == 'permissions'):
-    - user-restauration
+  - setGlobals:
+      nodeGroup: ${targetNodes.nodeGroup}
+  - if ('${settings.choice}' == 'full' && '${settings.mode}' == 'backup'): snapshot
+  - if ('${settings.choice}' == 'folder' && '${settings.mode}' == 'backup'): backup
+  - if ('${settings.mode}' == 'restauration' && '${settings.permissions}' == 'classic'): restauration
+  - if ('${settings.mode}' == 'restauration' && '${settings.permissions}' == 'permissions'): user-restauration
 
 actions:
   backup:
-    install:
-      jps: manifest/folders.jps
-      envName: ${env.name}
-      nodeGroup: ${targetNodes.nodeGroup}
-    setGlobals:
-      SUCCESS: backup
-    settings:
-      User: "${settings.User}"
-      path: "${settings.path}"
-      node: "${targetNodes.nodeGroup}"
-      key: "${settings.key}"
-      sauvegarde: "${settings.sauvegarde}"
-      year: "${settings.year}"
-      month: "${settings.month}"
-      day: "${settings.day}"
+    - install:
+        jps: manifest/folders.jps
+        envName: ${env.name}
+        nodeGroup: ${globals.nodeGroup}
+        settings:
+          User: "${settings.User}"
+          path: "${settings.path}"
+          node: "${globals.nodeGroup}"
+          key: "${settings.key}"
+          sauvegarde: "${settings.sauvegarde}"
+          year: "${settings.year}"
+          month: "${settings.month}"
+          day: "${settings.day}"
+    - setGlobals:
+        SUCCESS: backup
 
   restauration:
-    install:
-      jps: manifest/recovery.jps
-      envName: ${env.name}
-      nodeGroup: ${targetNodes.nodeGroup}
-    setGlobals:
-      SUCCESS: success
-    settings:
-      id: "${settings.snapshot}"
-      User: "${settings.User}"
-      key: "${settings.key}"
-      destination: "${settings.destination}"
-      node: "${targetNodes.nodeGroup}"
+    - install:
+        jps: manifest/recovery.jps
+        envName: ${env.name}
+        nodeGroup: ${globals.nodeGroup}
+        settings:
+          id: "${settings.snapshot}"
+          User: "${settings.User}"
+          key: "${settings.key}"
+          destination: "${settings.destination}"
+          node: "${globals.nodeGroup}"
+    - setGlobals:
+        SUCCESS: success
 
   user-restauration:
-    install:
-      jps: manifest/user-recovery.jps
-      envName: ${env.name}
-      nodeGroup: ${targetNodes.nodeGroup}
-    setGlobals:
-      SUCCESS: success
-    settings:
-      id: "${settings.snapshot}"
-      User: "${settings.User}"
-      key: "${settings.key}"
-      destination: "${settings.destination}"
-      node: "${targetNodes.nodeGroup}"
-      custom: "${settings.custom}"
+    - install:
+        jps: manifest/user-recovery.jps
+        envName: ${env.name}
+        nodeGroup: ${globals.nodeGroup}
+        settings:
+          id: "${settings.snapshot}"
+          User: "${settings.User}"
+          key: "${settings.key}"
+          destination: "${settings.destination}"
+          node: "${globals.nodeGroup}"
+          custom: "${settings.custom}"
+    - setGlobals:
+        SUCCESS: success
 
   snapshot:
-    install:
-      jps: manifest/snapshot.jps
-      envName: ${env.name}
-      nodeGroup: ${targetNodes.nodeGroup}
-    setGlobals:
-      SUCCESS: snapshots
-    settings:
-      User: "${settings.User}"
-      node: "${targetNodes.nodeGroup}"
-      key: "${settings.key}"
-      sauvegarde: "${settings.sauvegarde}"
-      year: "${settings.year}"
-      month: "${settings.month}"
-      day: "${settings.day}"
+    - install:
+        jps: manifest/snapshot.jps
+        envName: ${env.name}
+        nodeGroup: ${globals.nodeGroup}
+        settings:
+          User: "${settings.User}"
+          node: "${globals.nodeGroup}"
+          key: "${settings.key}"
+          sauvegarde: "${settings.sauvegarde}"
+          year: "${settings.year}"
+          month: "${settings.month}"
+          day: "${settings.day}"
+    - setGlobals:
+        SUCCESS: snapshots
 
   desinstall:
-    install:
-      jps: manifest/uninstall.jps
-      envName: ${env.name}
-      nodeGroup: ${targetNodes.nodeGroup}
-    setGlobals:
-      SUCCESS: remove
-    settings:
-      node: "${targetNodes.nodeGroup}"
+    - install:
+        jps: manifest/uninstall.jps
+        envName: ${env.name}
+        nodeGroup: ${globals.nodeGroup}
+        settings:
+          node: "${globals.nodeGroup}"
+    - setGlobals:
+        SUCCESS: remove
 
   manage:
     - if ('${settings.choice}' == 'full' && '${settings.mode}' == 'backup'): snapshot
