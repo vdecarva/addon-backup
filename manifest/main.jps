@@ -90,96 +90,22 @@ actions:
     settings:
       node: "${targetNodes.nodeGroup}"
 
-  modify:
-    - if ('${settings.sauvegarde}' == 'hourly' && '${settings.choice}' == 'full'): modify-hourly-full
-    - if ('${settings.sauvegarde}' == 'hourly' && '${settings.choice}' == 'folder'): modify-hourly-folder
-    - if ('${settings.sauvegarde}' == 'daily' && '${settings.choice}' == 'full'): modify-daily-full
-    - if ('${settings.sauvegarde}' == 'daily' && '${settings.choice}' == 'folder'): modify-daily-folder
-
-  modify-hourly-full:
-    cmd[${targetNodes.nodeGroup}]: |-
-      curl -fsSL https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/retention-all.sh --output /root/retention-all.sh
-      chmod u+x /root/retention-all.sh
-      curl -fsS https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/purge.sh --output /root/purge.sh
-      chmod u+x /root/purge.sh
-      curl -fsS https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/heal.sh --output /root/heal.sh
-      chmod u+x /root/heal.sh
-      if [ -f "/var/spool/cron/crontabs/root" ]; then sed -i '/restic.lock/d' /var/spool/cron/crontabs/root; elif [ -f "/var/spool/cron/root" ]; then sed -i '/restic.lock/d' /var/spool/cron/root; else echo "first install"; fi
-      crontab -u root -l | grep -v '/root/heal.sh'  | crontab -u root -
-      crontab -u root -l | { cat; echo "50 1 * * WED /root/heal.sh "; } | crontab -
-      crontab -u root -l | grep -v '/root/retention-all.sh'  | crontab -u root -
-      crontab -u root -l | grep -v '/root/retention-repo.sh' | crontab -u root -
-      crontab -u root -l | { cat; echo "0 */1 * * * /usr/bin/nohup /usr/bin/flock --nonblock --conflict-exit-code 0 /run/user/restic.lock /root/retention-all.sh >> /var/log/restic.log 2>&1 "; } | crontab -
-      crontab -u root -l | grep -v '/root/purge.sh'  | crontab -u root -
-      crontab -u root -l | { cat; echo "30 22 * * * perl -le 'sleep rand 600' && /root/purge.sh -y \"${settings.year}\" -m \"${settings.month}\" -d \"${settings.day}\" >> /var/log/retention.log 2>&1 "; } | crontab -
-      touch /var/log/restic.log /var/log/retention.log /root/retention.log
-    user: root
-
-  modify-hourly-folder:
-    cmd[${targetNodes.nodeGroup}]: |-
-      curl -fsS https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/retention-repo.sh --output /root/retention-repo.sh
-      chmod u+x /root/retention-repo.sh
-      curl -fsS https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/purge.sh --output /root/purge.sh
-      chmod u+x /root/purge.sh
-      curl -fsS https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/heal.sh --output /root/heal.sh
-      chmod u+x /root/heal.sh
-      if [ -f "/var/spool/cron/crontabs/root" ]; then sed -i '/restic.lock/d' /var/spool/cron/crontabs/root; elif [ -f "/var/spool/cron/root" ]; then sed -i '/restic.lock/d' /var/spool/cron/root; else echo "first install"; fi
-      crontab -u root -l | grep -v '/root/heal.sh'  | crontab -u root -
-      crontab -u root -l | { cat; echo "50 1 * * WED /root/heal.sh "; } | crontab -
-      crontab -u root -l | grep -v '/root/retention-all.sh'  | crontab -u root -
-      crontab -u root -l | grep -v '/root/retention-repo.sh' | crontab -u root -
-      crontab -u root -l | { cat; echo "0 */1 * * * /usr/bin/nohup /usr/bin/flock --nonblock --conflict-exit-code 0 /run/user/restic.lock /root/retention-repo.sh -f \"${settings.path}\" >> /var/log/restic.log 2>&1 "; } | crontab -
-      crontab -u root -l | grep -v '/root/purge.sh'  | crontab -u root -
-      crontab -u root -l | { cat; echo "30 22 * * * perl -le 'sleep rand 600' && /root/purge.sh -y \"${settings.year}\" -m \"${settings.month}\" -d \"${settings.day}\" >> /var/log/retention.log 2>&1 "; } | crontab -
-      touch /var/log/restic.log /var/log/retention.log /root/retention.log
-    user: root
-
-  modify-daily-full:
-    cmd[${targetNodes.nodeGroup}]: |-
-      curl -fsSL https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/retention-all.sh --output /root/retention-all.sh
-      chmod u+x /root/retention-all.sh
-      curl -fsS https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/purge.sh --output /root/purge.sh
-      chmod u+x /root/purge.sh
-      curl -fsS https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/heal.sh --output /root/heal.sh
-      chmod u+x /root/heal.sh
-      if [ -f "/var/spool/cron/crontabs/root" ]; then sed -i '/restic.lock/d' /var/spool/cron/crontabs/root; elif [ -f "/var/spool/cron/root" ]; then sed -i '/restic.lock/d' /var/spool/cron/root; else echo "first install"; fi
-      crontab -u root -l | grep -v '/root/heal.sh'  | crontab -u root -
-      crontab -u root -l | { cat; echo "50 1 * * WED /root/heal.sh "; } | crontab -
-      crontab -u root -l | grep -v '/root/retention-all.sh'  | crontab -u root -
-      crontab -u root -l | grep -v '/root/retention-repo.sh' | crontab -u root -
-      crontab -u root -l | { cat; echo "0 20 * * * /usr/bin/nohup /usr/bin/flock --nonblock --conflict-exit-code 0 /run/user/restic.lock /root/retention-all.sh >> /var/log/restic.log 2>&1 "; } | crontab -
-      crontab -u root -l | grep -v '/root/purge.sh'  | crontab -u root -
-      crontab -u root -l | { cat; echo "30 22 * * * perl -le 'sleep rand 600' && /root/purge.sh -y \"${settings.year}\" -m \"${settings.month}\" -d \"${settings.day}\" >> /var/log/retention.log 2>&1 "; } | crontab -
-      touch /var/log/restic.log /var/log/retention.log /root/retention.log
-    user: root
-
-  modify-daily-folder:
-    cmd[${targetNodes.nodeGroup}]: |-
-      curl -fsS https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/retention-repo.sh --output /root/retention-repo.sh
-      chmod u+x /root/retention-repo.sh
-      curl -fsS https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/purge.sh --output /root/purge.sh
-      chmod u+x /root/purge.sh
-      curl -fsS https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/heal.sh --output /root/heal.sh
-      chmod u+x /root/heal.sh
-      if [ -f "/var/spool/cron/crontabs/root" ]; then sed -i '/restic.lock/d' /var/spool/cron/crontabs/root; elif [ -f "/var/spool/cron/root" ]; then sed -i '/restic.lock/d' /var/spool/cron/root; else echo "first install"; fi
-      crontab -u root -l | grep -v '/root/heal.sh'  | crontab -u root -
-      crontab -u root -l | { cat; echo "50 1 * * WED /root/heal.sh "; } | crontab -
-      crontab -u root -l | grep -v '/root/retention-all.sh'  | crontab -u root -
-      crontab -u root -l | grep -v '/root/retention-repo.sh' | crontab -u root -
-      crontab -u root -l | { cat; echo "0 20 * * * /usr/bin/nohup /usr/bin/flock --nonblock --conflict-exit-code 0 /run/user/restic.lock /root/retention-repo.sh -f \"${settings.path}\" >> /var/log/restic.log 2>&1 "; } | crontab -
-      crontab -u root -l | grep -v '/root/purge.sh'  | crontab -u root -
-      crontab -u root -l | { cat; echo "30 22 * * * perl -le 'sleep rand 600' && /root/purge.sh -y \"${settings.year}\" -m \"${settings.month}\" -d \"${settings.day}\" >> /var/log/retention.log 2>&1 "; } | crontab -
-      touch /var/log/restic.log /var/log/retention.log /root/retention.log
-    user: root
+  manage:
+    - if ('${settings.choice}' == 'full' && '${settings.mode}' == 'backup'): snapshot
+    - if ('${settings.choice}' == 'folder' && '${settings.mode}' == 'backup'): backup
+    - if ('${settings.mode}' == 'restauration' && '${settings.permissions}' == 'classic'): restauration
+    - if ('${settings.mode}' == 'restauration' && '${settings.permissions}' == 'permissions'): user-restauration
+    - if ('${settings.mode}' == 'modify' && '${settings.choice}' == 'full'): snapshot
+    - if ('${settings.mode}' == 'modify' && '${settings.choice}' == 'folder'): backup
 
   user: root
 
 buttons:
-  - action: modify
-    caption: Modify backup routine
+  - action: manage
+    caption: Backup & Restore manager
     submitButtonText: Apply
-    loadingText: Updating backup routine...
-    settings: scripts/modify-settings.js
+    loadingText: Applying...
+    settings: scripts/settings.js
   - action: desinstall
     caption: Remove backup routine
     submitButtonText: Remove backup routine
