@@ -98,8 +98,6 @@ actions:
     - if ('${settings.mode}' == 'modify' && '${settings.choice}' == 'full'): snapshot
     - if ('${settings.mode}' == 'modify' && '${settings.choice}' == 'folder'): backup
 
-  user: root
-
 buttons:
   - action: manage
     caption: Backup & Restore manager
