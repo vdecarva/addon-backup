@@ -1,7 +1,7 @@
 jversion: 0.10
 type: update
 name: Backup / Restoration
-baseUrl: https://raw.githubusercontent.com/Infomaniak/addon-backup/master/
+baseUrl: https://raw.githubusercontent.com/vdecarva/addon-backup/master/
 description:
   text:
     <br>You can easily choose a **backup** **frequency** for your containers and easily choose the **lifetime** of your backups.</br>
@@ -54,6 +54,7 @@ actions:
       key: "${settings.key}"
       destination: "${settings.destination}"
       node: "${targetNodes.nodeGroup}"
+
   user-restauration:
     install:
       jps: manifest/user-recovery.jps
@@ -88,13 +89,31 @@ actions:
       SUCCESS: remove
     settings:
       node: "${targetNodes.nodeGroup}"
+
+  modify:
+    install:
+      jps: manifest/modify.jps
+    settings:
+      choice: "${settings.choice}"
+      path: "${settings.path}"
+      node: "${targetNodes.nodeGroup}"
+      sauvegarde: "${settings.sauvegarde}"
+      year: "${settings.year}"
+      month: "${settings.month}"
+      day: "${settings.day}"
+
   user: root
 
 buttons:
-  action: desinstall
-  caption: Remove backup routine
-  submitButtonText: Remove backup routine
-  loadingText: Remove backup routine...
+  - action: modify
+    caption: Modify backup routine
+    submitButtonText: Apply
+    loadingText: Updating backup routine...
+    settings: scripts/modify-settings.js
+  - action: desinstall
+    caption: Remove backup routine
+    submitButtonText: Remove backup routine
+    loadingText: Remove backup routine...
 
 success:
   text: success/${globals.SUCCESS}.md
