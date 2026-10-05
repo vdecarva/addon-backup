@@ -1,5 +1,26 @@
 import org.yaml.snakeyaml.Yaml;
 
+var _form = null;
+try { if (typeof formId === 'string') _form = formId; } catch(e) {}
+try { if (!_form && typeof settings === 'string') _form = settings; } catch(e) {}
+
+jelastic.marketplace.console.WriteLog('onBeforeInit: _form=' + _form + ' formId_type=' + typeof formId + ' settings_type=' + typeof settings);
+
+if (_form === 'routineSettings') {
+    return { result: 0, settings: { formId: 'routineSettings', formCfg: { fields: [
+        { type: 'list', name: 'sauvegarde', caption: 'Backup frequency',
+          values: { daily: 'Daily', hourly: 'Hourly' }, default: 'daily', required: true },
+        { type: 'compositefield', caption: 'Retention period', name: 'retention', items: [
+            { type: 'displayfield', hideLabel: true, markup: 'Years' },
+            { width: 37, name: 'year',  type: 'string', default: '0', required: true },
+            { type: 'displayfield', hideLabel: true, markup: 'Months' },
+            { width: 37, name: 'month', type: 'string', default: '0', required: true },
+            { type: 'displayfield', hideLabel: true, markup: 'Days' },
+            { width: 37, name: 'day',   type: 'string', default: '7', required: true }
+        ] }
+    ] } } };
+}
+
 var resp = jelastic.environment.control.GetEnvs(appid, session);
 var listBackups = {};
 var ids = [];
