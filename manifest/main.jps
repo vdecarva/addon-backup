@@ -108,7 +108,7 @@ buttons:
     submitButtonText: Remove backup routine
     loadingText: Remove backup routine...
   - action: schedule
-    settings: routineSettings
+    settings: swiss-backup-create
     caption: Edit schedule
     submitButtonText: Apply
     loadingText: Updating schedule...
