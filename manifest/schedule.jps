@@ -1,7 +1,55 @@
-type: update
+type: install
 name: Edit backup schedule
+baseUrl: https://raw.githubusercontent.com/vdecarva/addon-backup/master/
+
 targetNodes:
   nodeGroup: '*'
+
+settings:
+  fields:
+    - type: list
+      name: sauvegarde
+      caption: Backup frequency
+      values:
+        daily: Daily
+        hourly: Hourly
+      default: daily
+      required: true
+    - type: compositefield
+      caption: Retention period
+      name: retention
+      hideLabel: false
+      items:
+        - type: displayfield
+          hideLabel: true
+          markup: Years
+        - width: 37
+          name: year
+          type: string
+          regex: "^[0-1]$"
+          regexText: "0 or 1"
+          default: "0"
+          required: true
+        - type: displayfield
+          hideLabel: true
+          markup: Months
+        - width: 37
+          name: month
+          type: string
+          regex: "^(1[0-2]|[0-9])$"
+          regexText: "0-12"
+          default: "0"
+          required: true
+        - type: displayfield
+          hideLabel: true
+          markup: Days
+        - width: 37
+          name: day
+          type: string
+          regex: "^[1-9][0-9]?$"
+          regexText: "1-99"
+          default: "7"
+          required: true
 
 onInstall:
   - if ('${settings.sauvegarde}' == 'daily'): daily
@@ -9,7 +57,7 @@ onInstall:
 
 actions:
   daily:
-    cmd [${settings.node}]: |-
+    cmd [*]: |-
       CMD=$(crontab -u root -l | grep 'restic.lock' | grep '/var/log/restic.log' | grep -v '^#' | sed 's|.*/run/user/restic.lock ||; s| *>> /var/log/restic.log.*||')
       (crontab -u root -l | grep -v 'restic.lock' | grep -v '/root/purge.sh') | crontab -u root -
       (crontab -u root -l; echo "0 20 * * * /usr/bin/nohup /usr/bin/flock --nonblock --conflict-exit-code 0 /run/user/restic.lock $CMD >> /var/log/restic.log 2>&1") | crontab -u root -
@@ -17,7 +65,7 @@ actions:
     user: root
 
   hourly:
-    cmd [${settings.node}]: |-
+    cmd [*]: |-
       CMD=$(crontab -u root -l | grep 'restic.lock' | grep '/var/log/restic.log' | grep -v '^#' | sed 's|.*/run/user/restic.lock ||; s| *>> /var/log/restic.log.*||')
       (crontab -u root -l | grep -v 'restic.lock' | grep -v '/root/purge.sh') | crontab -u root -
       (crontab -u root -l; echo "0 */1 * * * /usr/bin/nohup /usr/bin/flock --nonblock --conflict-exit-code 0 /run/user/restic.lock $CMD >> /var/log/restic.log 2>&1") | crontab -u root -
