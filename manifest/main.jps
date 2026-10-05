@@ -102,53 +102,6 @@ actions:
       month: "${settings.month}"
       day: "${settings.day}"
 
-settings:
-  routineSettings:
-    fields:
-      - type: list
-        name: sauvegarde
-        caption: Backup frequency
-        values:
-          daily: Daily
-          hourly: Hourly
-        default: daily
-        required: true
-      - type: compositefield
-        caption: Retention period
-        name: retention
-        hideLabel: false
-        items:
-          - type: displayfield
-            hideLabel: true
-            markup: Years
-          - width: 37
-            name: year
-            type: string
-            regex: "^[0-1]$"
-            regexText: "0 or 1"
-            default: "0"
-            required: true
-          - type: displayfield
-            hideLabel: true
-            markup: Months
-          - width: 37
-            name: month
-            type: string
-            regex: "^(1[0-2]|[0-9])$"
-            regexText: "0-12"
-            default: "0"
-            required: true
-          - type: displayfield
-            hideLabel: true
-            markup: Days
-          - width: 37
-            name: day
-            type: string
-            regex: "^[1-9][0-9]?$"
-            regexText: "1-99"
-            default: "7"
-            required: true
-
 buttons:
   - action: desinstall
     caption: Remove backup routine
