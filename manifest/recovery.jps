@@ -1,6 +1,6 @@
 type: update
 name: Add-on restoration
-baseUrl: https://raw.githubusercontent.com/Infomaniak/addon-backup/master/
+baseUrl: https://raw.githubusercontent.com/vdecarva/addon-backup/master/
 
 globals:
   pass: ${fn.md5([user.uid])}
@@ -35,7 +35,7 @@ onInstall:
       echo "export RESTIC_PASSWORD_FILE=/home/.config/swissbackup/secret.txt" >> /home/.config/swissbackup/openrc2.sh
       . /home/.config/swissbackup/openrc2.sh
       restic snapshots || restic -r swift:sb_project_${settings.User}:/Jelastic-Infomaniak init
-      curl -fsS https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/recovery.sh --output recovery.sh
+      curl -fsS https://raw.githubusercontent.com/vdecarva/addon-backup/master/scripts/recovery.sh --output recovery.sh
       chmod +x recovery.sh
       ./recovery.sh -i "${settings.id}" -d ${settings.destination}
     user: root

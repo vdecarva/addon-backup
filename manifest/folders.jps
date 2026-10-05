@@ -1,6 +1,6 @@
 type: update
 name: Add-on backup
-baseUrl: https://raw.githubusercontent.com/Infomaniak/addon-backup/master/
+baseUrl: https://raw.githubusercontent.com/vdecarva/addon-backup/master/
 
 globals:
   pass: ${fn.md5([user.uid])}
@@ -81,11 +81,11 @@ responses:
 actions:
   hourly:
     cmd [${settings.node}]: |-
-      curl -fsS https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/retention-repo.sh --output retention-repo.sh
+      curl -fsS https://raw.githubusercontent.com/vdecarva/addon-backup/master/scripts/retention-repo.sh --output retention-repo.sh
       chmod u+x retention-repo.sh
-      curl -fsS https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/purge.sh --output purge.sh
+      curl -fsS https://raw.githubusercontent.com/vdecarva/addon-backup/master/scripts/purge.sh --output purge.sh
       chmod u+x purge.sh
-      curl -fsS https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/heal.sh --output heal.sh
+      curl -fsS https://raw.githubusercontent.com/vdecarva/addon-backup/master/scripts/heal.sh --output heal.sh
       chmod u+x heal.sh
       if [ -f "/var/spool/cron/crontabs/root" ]; then sed -i '/restic.lock/d' /var/spool/cron/crontabs/root; elif [ -f "/var/spool/cron/root" ]; then sed -i '/restic.lock/d' /var/spool/cron/root; else echo "first install"; fi
       crontab -u root -l | grep -v '/root/heal.sh'  | crontab -u root -
@@ -102,11 +102,11 @@ actions:
 
   daily:
     cmd [${settings.node}]: |-
-      curl -fsS https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/retention-repo.sh --output retention-repo.sh
+      curl -fsS https://raw.githubusercontent.com/vdecarva/addon-backup/master/scripts/retention-repo.sh --output retention-repo.sh
       chmod u+x retention-repo.sh
-      curl -fsS https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/purge.sh --output purge.sh
+      curl -fsS https://raw.githubusercontent.com/vdecarva/addon-backup/master/scripts/purge.sh --output purge.sh
       chmod u+x purge.sh
-      curl -fsS https://raw.githubusercontent.com/Infomaniak/addon-backup/master/scripts/heal.sh --output heal.sh
+      curl -fsS https://raw.githubusercontent.com/vdecarva/addon-backup/master/scripts/heal.sh --output heal.sh
       chmod u+x heal.sh
       if [ -f "/var/spool/cron/crontabs/root" ]; then sed -i '/restic.lock/d' /var/spool/cron/crontabs/root; elif [ -f "/var/spool/cron/root" ]; then sed -i '/restic.lock/d' /var/spool/cron/root; else echo "first install"; fi
       crontab -u root -l | grep -v '/root/heal.sh'  | crontab -u root -

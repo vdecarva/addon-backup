@@ -1,0 +1,25 @@
+type: update
+name: Edit backup schedule
+targetNodes:
+  nodeGroup: '*'
+
+onInstall:
+  - if ('${settings.sauvegarde}' == 'daily'): daily
+  - if ('${settings.sauvegarde}' == 'hourly'): hourly
+
+actions:
+  daily:
+    cmd [${settings.node}]: |-
+      CMD=$(crontab -u root -l | grep 'restic.lock' | grep '/var/log/restic.log' | grep -v '^#' | sed 's|.*/run/user/restic.lock ||; s| *>> /var/log/restic.log.*||')
+      (crontab -u root -l | grep -v 'restic.lock' | grep -v '/root/purge.sh') | crontab -u root -
+      (crontab -u root -l; echo "0 20 * * * /usr/bin/nohup /usr/bin/flock --nonblock --conflict-exit-code 0 /run/user/restic.lock $CMD >> /var/log/restic.log 2>&1") | crontab -u root -
+      (crontab -u root -l; echo "30 22 * * * perl -le 'sleep rand 600' && /root/purge.sh -y ${settings.year} -m ${settings.month} -d ${settings.day} >> /var/log/retention.log 2>&1") | crontab -u root -
+    user: root
+
+  hourly:
+    cmd [${settings.node}]: |-
+      CMD=$(crontab -u root -l | grep 'restic.lock' | grep '/var/log/restic.log' | grep -v '^#' | sed 's|.*/run/user/restic.lock ||; s| *>> /var/log/restic.log.*||')
+      (crontab -u root -l | grep -v 'restic.lock' | grep -v '/root/purge.sh') | crontab -u root -
+      (crontab -u root -l; echo "0 */1 * * * /usr/bin/nohup /usr/bin/flock --nonblock --conflict-exit-code 0 /run/user/restic.lock $CMD >> /var/log/restic.log 2>&1") | crontab -u root -
+      (crontab -u root -l; echo "30 22 * * * perl -le 'sleep rand 600' && /root/purge.sh -y ${settings.year} -m ${settings.month} -d ${settings.day} >> /var/log/retention.log 2>&1") | crontab -u root -
+    user: root
